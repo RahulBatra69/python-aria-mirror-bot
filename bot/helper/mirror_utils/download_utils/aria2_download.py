@@ -74,3 +74,14 @@ class AriaDownloadHelper(DownloadHelper):
         with download_dict_lock:
             download_dict[listener.uid] = AriaDownloadStatus(download.gid,listener)
             LOGGER.info(f"Started: {download.gid} DIR:{download.dir} ")
+
+    def cancel_download(self):
+        download = aria2.get_download(self.gid)
+        if download.is_waiting:
+            aria2.remove([download])
+            self.__listener.onDownloadError("Cancelled by user")
+            return
+        if len(download.followed_by_ids) != 0:
+            downloads = aria2.get_downloads(download.followed_by_ids)
+            aria2.pause(downloads)
+        aria2.pause([download])
